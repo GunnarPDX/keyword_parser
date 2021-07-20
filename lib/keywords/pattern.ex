@@ -1,4 +1,4 @@
-defmodule KeywordParser.Pattern do
+defmodule Keywords.Pattern do
   use Agent
 
   def start_link([name, keyword_list]) do

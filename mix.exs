@@ -1,9 +1,9 @@
-defmodule KeywordParser.MixProject do
+defmodule Keywords.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :keyword_parser,
+      app: :keywords,
       version: "0.1.0",
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
@@ -15,7 +15,7 @@ defmodule KeywordParser.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      mod: {KeywordParser.Application, []}
+      mod: {Keywords.Application, []}
     ]
   end
 
