@@ -13,7 +13,7 @@ defmodule Keywords.Pattern do
     Agent.update(pid, fn state -> pattern end)
   end
 
-  def get(pid), do: Agent.get(pid, fn content -> content.pattern end)
+  def get(pid), do: Agent.get(pid, fn content -> content end)
 
   defp compile_pattern(keyword_list), do: :binary.compile_pattern(keyword_list)
 
