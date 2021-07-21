@@ -10,7 +10,7 @@ defmodule Keywords.Pattern do
   def recompile_pattern(pid, keyword_list) do
     pattern = compile_pattern(keyword_list)
 
-    Agent.update(pid, fn state -> pattern end)
+    Agent.update(pid, fn _state -> pattern end)
   end
 
   def get(pid), do: Agent.get(pid, fn content -> content end)
