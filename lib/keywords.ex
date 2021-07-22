@@ -16,27 +16,95 @@ defmodule Keywords do
   # Keywords.parse(" XOM AAPL AMZN $TSLA buy now, ++ PLTR and $AMZN", [:stocks, :stocks_2], [aggregate: false])
   # Registry.select(PatternRegistry, [{{:"$1", :_, :_}, [], [:"$1"]}])
 
+  # Keywords.new_pattern(:stocks, ["TSLA", "XOM", "AMZN"])
+  # Keywords.new_pattern(:stocks_2, ["PLTR", "AAPL"])
+  # Keywords.kill_pattern(:stocks)
+  # Registry.select(PatternRegistry, [{{:"$1", :_, :_}, [], [:"$1"]}])
+
   @doc """
-  Generates new keyword list pattern for parsing strings.
+  Generates new keyword-pattern for parsing strings from a list of keywords.
+
+  ## Examples
+      iex> Keywords.new_pattern(:stocks, ["TSLA", "XOM", "AMZN"])
+      {:ok, :stocks}
+      iex> Keywords.new_pattern(:stocks, ["TSLA", "XOM", "AMZN"])
+      {:error, :already_started}
   """
   def new_pattern(name, keyword_list) do
     name = via_registry_tuple(name)
 
-    DynamicSupervisor.start_child(PatternSupervisor, {Pattern, [name, keyword_list]})
+    case DynamicSupervisor.start_child(PatternSupervisor, {Pattern, [name, keyword_list]}) do
+      {:ok, _pid} -> {:ok, name}
+      {:error, {:already_started, _pid}} -> {:error, :already_started}
+      err -> err
+    end
+  end
+
+  @doc """
+  Removes pattern by name.
+
+  ## Examples
+      iex> Keywords.kill_pattern(:stocks)
+      {:ok, :stocks}
+      iex> Keywords.kill_pattern(:stocks)
+      {:error, :not_found}
+  """
+  def kill_pattern(name) do
+    result = Registry.lookup(PatternRegistry, name) |> List.first()
+
+    with {pid, _} <- result,
+         :ok <- DynamicSupervisor.terminate_child(PatternSupervisor, pid)
+      do
+        {:ok, name}
+      else
+        err -> {:error, :not_found}
+    end
   end
 
   @doc """
   Parses tickers from string
 
+  opts
+  -> counts: true/false (include total occurrences of each keyword)
+  -> aggregate: true/false (group results by pattern name)
+  defaults -> counts: false, aggregate: true
+
   ## Examples
-      Keywords.parse(" XOM AAPL $TSLA buy now, ++ PLTR and $AMZN", :stock_tickers)
+      iex> Keywords.parse(" XOM AAPL $TSLA buy now, ++ PLTR and $AMZN", :stocks)
       [XOM, AAPL, TSLA, PLTR, AMZN]
+
+      iex> Keywords.parse(" XOM AAPL $TSLA buy now, ++ PLTR and $AMZN", :stocks_2)
+      ["AAPL", "PLTR"]
+
+      iex> Keywords.parse(" XOM AAPL $TSLA buy now, ++ PLTR and $AMZN", [:stocks, :stocks_2])
+      ["AAPL", "PLTR", XOM, TSLA, PLTR, AMZN]
+
+      iex> Keywords.parse(" XOM AAPL AMZN $TSLA buy now, ++ PLTR and $AMZN", :all)
+      ["XOM", "AMZN", "TSLA", "AAPL", "PLTR"]
+
+      iex> Keywords.parse(" XOM AAPL AMZN $TSLA buy now, ++ PLTR and $AMZN", :stocks, [counts: true])
+      [{"AMZN", 2}, {"TSLA", 1}, {"XOM", 1}]
+
+      iex> Keywords.parse(" XOM AAPL AMZN $TSLA buy now, ++ PLTR and $AMZN", [:stocks, :stocks_2], [counts: true])
+      [{"AAPL", 1}, {"AMZN", 2}, {"PLTR", 1}, {"TSLA", 1}, {"XOM", 1}]
+
+      iex> Keywords.parse(" XOM AAPL AMZN $TSLA buy now, ++ PLTR and $AMZN", [:stocks, :stocks_2], [counts: true, aggregate: false])
+      [stocks: [{"AMZN", 2}, {"TSLA", 1}, {"XOM", 1}], stocks_2: [{"AAPL", 1}, {"PLTR", 1}]]
+
+      iex> Keywords.parse(" XOM AAPL AMZN $TSLA buy now, ++ PLTR and $AMZN", [:stocks, :stocks_2], [aggregate: false])
+      [stocks: ["XOM", "AMZN", "TSLA"], stocks_2: ["AAPL", "PLTR"]]
+
+      iex> Keywords.parse("a|n[xwn;qw%dl$qm*w", :stocks)
+      []
+
+      iex> Keywords.parse(nil, :stocks)
+      []
+
   """
   @parse_defaults %{counts: false, aggregate: true}
-
   def parse(string, pattern_names, opts \\ [])
-  def parse(nil, _, _), do: nil
-  def parse(_, nil, _), do: nil
+  def parse(nil, _, _), do: []
+  def parse(_, nil, _), do: []
 
   def parse(string, pattern_names, opts) when is_list(pattern_names) do
     opts = Enum.into(opts, @parse_defaults)
@@ -94,9 +162,7 @@ defmodule Keywords do
     end
   end
 
-  @doc """
-  Recompiles keyword pattern.
-  """
+  @doc false
   def recompile(pid, keyword_list), do: Pattern.recompile_pattern(pid, keyword_list)
 
   defp via_registry_tuple(name), do: {:via, Registry, {PatternRegistry, name}}
