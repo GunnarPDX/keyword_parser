@@ -15,6 +15,7 @@ defmodule Keywords do
       iex> Keywords.new_pattern(:stocks, ["TSLA", "XOM", "AMZN"])
       {:error, :already_started}
   """
+  def new_pattern(:all, _), do: {:error, :reserved_name}
   def new_pattern(name, keyword_list) do
     name = via_registry_tuple(name)
 
