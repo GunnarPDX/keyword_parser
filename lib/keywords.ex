@@ -21,6 +21,8 @@ defmodule Keywords do
   def new_pattern(:all, _, _), do: {:error, :reserved_name}
 
   def new_pattern(name, keyword_list, opts) do
+    # TODO: store original keywords and opts in pattern agent.
+
     opts = Enum.into(opts, @new_pattern_defaults)
 
     keyword_list =
@@ -28,7 +30,7 @@ defmodule Keywords do
       |> add_case_variants(opts)
       |> add_prefix_characters(opts)
       |> add_postfix_characters(opts)
-      |> prevent_substring_matches(opts) |> IO.inspect()
+      |> prevent_substring_matches(opts)
 
     registry_name = via_registry_tuple(name)
 
