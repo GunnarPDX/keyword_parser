@@ -9,33 +9,34 @@ defmodule Keywords do
   @doc """
   Generates new keyword-pattern for parsing strings from a list of keywords.
 
+  opts
+  -> case_sensitive: true/false
+  defaults -> case_sensitive: false
+
   ## Examples
       iex> Keywords.new_pattern(:stocks, ["TSLA", "XOM", "AMZN"])
       {:ok, :stocks}
       iex> Keywords.new_pattern(:stocks, ["TSLA", "XOM", "AMZN"])
       {:error, :already_started}
   """
-  @new_pattern_defaults %{substrings: false, case_sensitive: false, prefix_characters: [], postfix_characters: []}
+  @new_pattern_defaults %{case_sensitive: false}
 
   def new_pattern(name, keyword_list, opts \\ [])
   def new_pattern(:all, _, _), do: {:error, :reserved_name}
 
   def new_pattern(name, keyword_list, opts) do
-    # TODO: store original keywords and opts in pattern agent.
-
     opts = Enum.into(opts, @new_pattern_defaults)
 
     pattern =
       keyword_list
       |> add_case_variants(opts)
-      |> add_prefix_characters(opts)
-      |> add_postfix_characters(opts)
-      |> prevent_substring_matches(opts)
       |> :binary.compile_pattern()
+
+    keywords_map = Enum.into(keyword_list, %{}, fn kw -> {String.downcase(kw), kw} end)
 
     data = %{
       pattern: pattern,
-      keyword_list: keyword_list,
+      keywords_map: keywords_map,
       options: opts
     }
 
@@ -65,7 +66,7 @@ defmodule Keywords do
       do
         {:ok, name}
       else
-        err -> {:error, :not_found}
+        _err -> {:error, :not_found}
     end
   end
 
@@ -171,48 +172,34 @@ defmodule Keywords do
     end
   end
 
-  @doc false
-  def recompile_pattern(pid, keyword_list) do
-    # :binary.compile_pattern(keyword_list)
-    Pattern.recompile_pattern(pid, keyword_list)
-  end
+  # @doc false
+  # def recompile_pattern(pid, keyword_list) do
+  #   :binary.compile_pattern(keyword_list)
+  #   Pattern.recompile_pattern(pid, keyword_list)
+  # end
 
   defp via_registry_tuple(name), do: {:via, Registry, {PatternRegistry, name}}
 
   defp from_registry_tuple({:via, _, {_, name}}), do: name
 
   defp get_matches(name, string) do
-    %{pattern: pattern} = Pattern.get(name)
+    %{pattern: pattern, keywords_map: keywords_map, options: opts} = Pattern.get(name)
 
     result =
       string
       |> :binary.matches(pattern)
-      |> Enum.map(fn bit_match -> :binary.part(string, bit_match) end)
+      |> Enum.map(fn bit_match -> pull_keyword_match(string, bit_match, keywords_map, opts) end)
 
     {from_registry_tuple(name), result}
   end
 
-  defp add_prefix_characters(keyword_list, %{prefix_characters: []}), do: keyword_list
-  defp add_prefix_characters(keyword_list, %{prefix_characters: pre_chars}) do
-    prefix_variants = for kw <- keyword_list, pc <- pre_chars do
-      pc <> kw
+  defp pull_keyword_match(string, bit_match, keywords_map, opts) do
+    match = :binary.part(string, bit_match)
+
+    case opts.case_sensitive do
+      false -> keywords_map[String.downcase(match)]
+      _ -> match
     end
-
-    prefix_variants ++ keyword_list
-  end
-
-  defp add_postfix_characters(keyword_list, %{postfix_characters: []}), do: keyword_list
-  defp add_postfix_characters(keyword_list, %{postfix_characters: post_chars}) do
-    postfix_variants = for kw <- keyword_list, pc <- post_chars do
-      kw <> pc
-    end
-
-    postfix_variants ++ keyword_list
-  end
-
-  defp prevent_substring_matches(keyword_list, %{substrings: true}), do: keyword_list
-  defp prevent_substring_matches(keyword_list, %{substrings: false}) do
-    Enum.map(keyword_list, fn kw -> " " <> String.trim(kw) <> " " end)
   end
 
   defp add_case_variants(keyword_list, %{case_sensitive: true}), do: keyword_list
