@@ -15,11 +15,24 @@ defmodule Keywords do
       iex> Keywords.new_pattern(:stocks, ["TSLA", "XOM", "AMZN"])
       {:error, :already_started}
   """
-  def new_pattern(:all, _), do: {:error, :reserved_name}
-  def new_pattern(name, keyword_list) do
-    name = via_registry_tuple(name)
+  @new_pattern_defaults %{substrings: false, case_sensitive: false, prefix_characters: [], postfix_characters: []}
 
-    case DynamicSupervisor.start_child(PatternSupervisor, {Pattern, [name, keyword_list]}) do
+  def new_pattern(name, keyword_list, opts \\ [])
+  def new_pattern(:all, _, _), do: {:error, :reserved_name}
+
+  def new_pattern(name, keyword_list, opts) do
+    opts = Enum.into(opts, @new_pattern_defaults)
+
+    keyword_list =
+      keyword_list
+      |> add_case_variants(opts)
+      |> add_prefix_characters(opts)
+      |> add_postfix_characters(opts)
+      |> prevent_substring_matches(opts) |> IO.inspect()
+
+    registry_name = via_registry_tuple(name)
+
+    case DynamicSupervisor.start_child(PatternSupervisor, {Pattern, [registry_name, keyword_list]}) do
       {:ok, _pid} -> {:ok, name}
       {:error, {:already_started, _pid}} -> {:error, :already_started}
       err -> err
@@ -88,6 +101,7 @@ defmodule Keywords do
 
   """
   @parse_defaults %{counts: false, aggregate: true}
+
   def parse(string, pattern_names, opts \\ [])
   def parse(nil, _, _), do: []
   def parse(_, nil, _), do: []
@@ -164,6 +178,38 @@ defmodule Keywords do
       |> Enum.map(fn bit_match -> :binary.part(string, bit_match) end)
 
     {from_registry_tuple(name), result}
+  end
+
+  defp add_prefix_characters(keyword_list, %{prefix_characters: []}), do: keyword_list
+  defp add_prefix_characters(keyword_list, %{prefix_characters: pre_chars}) do
+    prefix_variants = for kw <- keyword_list, pc <- pre_chars do
+      pc <> kw
+    end
+
+    prefix_variants ++ keyword_list
+  end
+
+  defp add_postfix_characters(keyword_list, %{postfix_characters: []}), do: keyword_list
+  defp add_postfix_characters(keyword_list, %{postfix_characters: post_chars}) do
+    postfix_variants = for kw <- keyword_list, pc <- post_chars do
+      kw <> pc
+    end
+
+    postfix_variants ++ keyword_list
+  end
+
+  defp prevent_substring_matches(keyword_list, %{substrings: true}), do: keyword_list
+  defp prevent_substring_matches(keyword_list, %{substrings: false}) do
+    Enum.map(keyword_list, fn kw -> " " <> String.trim(kw) <> " " end)
+  end
+
+  defp add_case_variants(keyword_list, %{case_sensitive: true}), do: keyword_list
+  defp add_case_variants(keyword_list, %{case_sensitive: false}) do
+    uppercase_keyword_list = Enum.map(keyword_list, fn kw -> String.upcase(kw) end)
+    lowercase_keyword_list = Enum.map(keyword_list, fn kw -> String.downcase(kw) end)
+    capitalized_keyword_list = Enum.map(lowercase_keyword_list, fn kw -> String.capitalize(kw) end)
+
+    uppercase_keyword_list ++ lowercase_keyword_list ++ capitalized_keyword_list
   end
 
 
