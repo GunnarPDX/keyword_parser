@@ -1,20 +1,21 @@
 defmodule Keywords.Pattern do
   use Agent
 
-  def start_link([name, keyword_list]) do
-    pattern = compile_pattern(keyword_list)
+  # data = %{
+  #  pattern: pattern,
+  #  keyword_list: keyword_list,
+  #  options: opts
+  #}
 
-    Agent.start_link(fn -> pattern end, name: name)
-  end
+  def start_link([name, data]),
+      do: Agent.start_link(fn -> data end, name: name)
 
-  def recompile_pattern(pid, keyword_list) do
-    pattern = compile_pattern(keyword_list)
+  def get(pid),
+      do: Agent.get(pid, fn data -> data end)
 
-    Agent.update(pid, fn _state -> pattern end)
-  end
-
-  def get(pid), do: Agent.get(pid, fn content -> content end)
-
-  defp compile_pattern(keyword_list), do: :binary.compile_pattern(keyword_list)
+  # def recompile_pattern(pid, keyword_list) do
+  #   pattern = compile_pattern(keyword_list)
+  #   Agent.update(pid, fn data -> %{new_pattern...} end)
+  # end
 
 end
