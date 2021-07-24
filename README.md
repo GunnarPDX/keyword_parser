@@ -47,6 +47,9 @@ end
 #### Creates a new keyword pattern from a list of keywords
 ```Keywords.new_pattern(name, keywords_list)```
 
+options include:
+- `:case_sensitive` true/false | default = false | toggles whether keyword matches case sensitive.
+
 ### parse
 #### Extracts keywords from a string
 ```parse(string, pattern_names, opts)```
