@@ -25,16 +25,23 @@ defmodule Keywords do
 
     opts = Enum.into(opts, @new_pattern_defaults)
 
-    keyword_list =
+    pattern =
       keyword_list
       |> add_case_variants(opts)
       |> add_prefix_characters(opts)
       |> add_postfix_characters(opts)
       |> prevent_substring_matches(opts)
+      |> :binary.compile_pattern()
+
+    data = %{
+      pattern: pattern,
+      keyword_list: keyword_list,
+      options: opts
+    }
 
     registry_name = via_registry_tuple(name)
 
-    case DynamicSupervisor.start_child(PatternSupervisor, {Pattern, [registry_name, keyword_list]}) do
+    case DynamicSupervisor.start_child(PatternSupervisor, {Pattern, [registry_name, data]}) do
       {:ok, _pid} -> {:ok, name}
       {:error, {:already_started, _pid}} -> {:error, :already_started}
       err -> err
@@ -165,14 +172,17 @@ defmodule Keywords do
   end
 
   @doc false
-  def recompile_pattern(pid, keyword_list), do: Pattern.recompile_pattern(pid, keyword_list)
+  def recompile_pattern(pid, keyword_list) do
+    # :binary.compile_pattern(keyword_list)
+    Pattern.recompile_pattern(pid, keyword_list)
+  end
 
   defp via_registry_tuple(name), do: {:via, Registry, {PatternRegistry, name}}
 
   defp from_registry_tuple({:via, _, {_, name}}), do: name
 
   defp get_matches(name, string) do
-    pattern = Pattern.get(name)
+    %{pattern: pattern} = Pattern.get(name)
 
     result =
       string
