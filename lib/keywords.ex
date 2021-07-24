@@ -149,7 +149,7 @@ defmodule Keywords do
   end
 
   @doc false
-  def recompile(pid, keyword_list), do: Pattern.recompile_pattern(pid, keyword_list)
+  def recompile_pattern(pid, keyword_list), do: Pattern.recompile_pattern(pid, keyword_list)
 
   defp via_registry_tuple(name), do: {:via, Registry, {PatternRegistry, name}}
 
