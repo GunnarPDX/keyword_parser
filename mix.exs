@@ -44,4 +44,19 @@ defmodule Keywords.MixProject do
       links: %{"GitHub" => "https://github.com/GunnarPDX/keyword_parser"}
     ]
   end
+
+  defp description() do
+    """
+    Parses keywords from strings.
+    """
+  end
+
+  defp package() do
+    [
+      # These are the default files included in the package
+      files: ~w(lib priv .formatter.exs mix.exs README* LICENSE*),
+      licenses: ["MIT"],
+      links: %{"GitHub" => "https://github.com/GunnarPDX/keyword_parser"}
+    ]
+  end
 end
