@@ -21,15 +21,15 @@ defmodule KeywordsTest do
   describe "new_pattern" do
     test "create new pattern" do
       result = Keywords.new_pattern(:stocks, ["TSLA", "XOM", "AMZN"])
-      assert result == {:ok, {:via, Registry, {PatternRegistry, :stocks}}}
+      assert result == {:ok, :stocks}
     end
 
     test "create multiple patterns" do
       result_1 = Keywords.new_pattern(:stocks_1, ["TSLA", "XOM", "AMZN"])
       result_2 = Keywords.new_pattern(:stocks_2, ["PLTR", "AAPL"])
 
-      assert result_1 == {:ok, {:via, Registry, {PatternRegistry, :stocks_1}}}
-      assert result_2 == {:ok, {:via, Registry, {PatternRegistry, :stocks_2}}}
+      assert result_1 == {:ok, :stocks_1}
+      assert result_2 == {:ok, :stocks_2}
 
       registry = Registry.select(PatternRegistry, [{{:"$1", :_, :_}, [], [:"$1"]}])
 
@@ -78,12 +78,16 @@ defmodule KeywordsTest do
     test "simple usage" do
       Keywords.new_pattern(:stocks_1, ["TSLA", "XOM", "AMZN"])
       Keywords.new_pattern(:stocks_2, ["PLTR", "AAPL"])
+      Keywords.new_pattern(:stocks_3, ["NVDA", "AMZN", "XOM", "FB"])
 
       result = Keywords.parse(" XOM AAPL $TSLA buy now, ++ PLTR and $AMZN", :stocks_1)
-      assert result == ["XOM", "TSLA", "AMZN"]
+      compare_parse_results result, ["AMZN", "TSLA", "XOM"]
 
       result = Keywords.parse(" XOM AAPL $TSLA buy now, ++ PLTR and $AMZN", :stocks_2)
-      assert result == ["AAPL", "PLTR"]
+      compare_parse_results result, ["AAPL", "PLTR"]
+
+      result = Keywords.parse(" My favorite picks right now are $NVDA and $AMZN 🚀🚀🚀, but XOM and fb have my attention 🌝", :stocks_3)
+      compare_parse_results result, ["AMZN", "FB", "NVDA", "XOM"]
     end
 
     test "simple no matches" do
@@ -113,7 +117,7 @@ defmodule KeywordsTest do
       Keywords.new_pattern(:stocks_2, ["PLTR", "AAPL"])
 
       result = Keywords.parse(" XOM AAPL $TSLA buy now, ++ PLTR and $AMZN", [:stocks_1, :stocks_2])
-      assert result == ["AAPL", "PLTR", "XOM", "TSLA", "PLTR", "AMZN"]
+      compare_parse_results result, ["AAPL", "AMZN", "PLTR", "TSLA", "XOM"]
     end
 
     test ":all patterns" do
@@ -121,7 +125,7 @@ defmodule KeywordsTest do
       Keywords.new_pattern(:stocks_2, ["PLTR", "AAPL"])
 
       result = Keywords.parse(" XOM AAPL AMZN $TSLA buy now, ++ PLTR and $AMZN", :all)
-      assert result == ["XOM", "AMZN", "TSLA", "AAPL", "PLTR"]
+      compare_parse_results result, ["AAPL", "AMZN", "PLTR", "TSLA", "XOM"]
     end
 
     test "single pattern with counts" do
@@ -154,8 +158,15 @@ defmodule KeywordsTest do
       Keywords.new_pattern(:stocks, ["TSLA", "XOM", "AMZN"])
 
       result = Keywords.parse(" XOM AAPL $TSLA buy now, ++ PLTR and $AMZN", :stocks, [aggregate: false])
-      assert result == ["TSLA", "XOM", "AMZN"]
+      assert result == ["AMZN", "TSLA", "XOM"]
     end
+  end
+
+  defp compare_parse_results({:ok, result}, valid_result) do
+    result = Enum.sort(result)
+    valid_result = Enum.sort(valid_result)
+
+    assert result == valid_result
   end
 
 end

@@ -22,7 +22,7 @@ defmodule Keywords do
   @new_pattern_defaults %{case_sensitive: false}
 
   def new_pattern(name, keyword_list, opts \\ [])
-  def new_pattern(:all, _, _), do: {:error, :reserved_name}
+  def new_pattern(:all, _, _), do: {:error, :reserved_pattern_name}
 
   def new_pattern(name, keyword_list, opts) do
     opts = Enum.into(opts, @new_pattern_defaults)
@@ -66,7 +66,7 @@ defmodule Keywords do
       do
         {:ok, name}
       else
-        _err -> {:error, :not_found}
+        _err -> {:error, :pattern_not_found}
     end
   end
 
@@ -121,10 +121,65 @@ defmodule Keywords do
 
     result_sets =
       pattern_names
-      |> Enum.map(fn name -> via_registry_tuple(name) end)
+      |> Enum.map(fn name -> name end) # via registry_tuple...
       |> Enum.map(fn name -> get_matches(name, string) end)
+      |> Enum.reduce({[], []}, fn
+          {:ok, {name, result}}, {results, errors} ->
+            {results ++ [result], errors}
 
+          {:error, name}, {results, errors} ->
+            {results, errors ++ [name]}
+        end)
 
+    case result_sets do
+      {results, []} ->
+        matches = process_multi_pattern_opts(results, opts)
+        {:ok, matches}
+
+      {_results, missing_patterns} ->
+        {:error, %{patterns_not_found: missing_patterns}}
+    end
+
+  end
+
+  def parse(string, :all, opts) do
+    pattern_names = Registry.select(PatternRegistry, [{{:"$1", :_, :_}, [], [:"$1"]}])
+
+    parse(string, pattern_names, opts)
+  end
+
+  def parse(string, pattern_name, opts) do
+    opts = Enum.into(opts, @parse_defaults)
+
+    case get_matches(pattern_name, string) do
+      {:ok, {_name, result}} ->
+        matches = process_single_pattern_opts(result, opts)
+        {:ok, matches}
+
+      {:error, name} ->
+        {:error, %{patterns_not_found: name}}
+    end
+  end
+
+  # @doc false
+  # def recompile_pattern(pid, keyword_list) do
+  #   :binary.compile_pattern(keyword_list)
+  #   Pattern.recompile_pattern(pid, keyword_list)
+  # end
+
+  defp process_single_pattern_opts(result, opts) do
+    case opts do
+      %{counts: true} ->
+        result
+        |> Enum.frequencies()
+        |> Map.to_list()
+
+      %{counts: false} ->
+        Enum.uniq(result)
+    end
+  end
+
+  defp process_multi_pattern_opts(result_sets, opts) do
     case opts do
       %{counts: true, aggregate: true} ->
         result_sets
@@ -147,50 +202,26 @@ defmodule Keywords do
     end
   end
 
-  def parse(string, :all, opts) do
-    pattern_names = Registry.select(PatternRegistry, [{{:"$1", :_, :_}, [], [:"$1"]}])
-
-    parse(string, pattern_names, opts)
-  end
-
-  def parse(string, pattern_name, opts) when is_atom(pattern_name) do
-    opts = Enum.into(opts, @parse_defaults)
-
-    {_name, result} =
-      pattern_name
-      |> via_registry_tuple()
-      |> get_matches(string)
-
-    case opts do
-      %{counts: true} ->
-        result
-        |> Enum.frequencies()
-        |> Map.to_list()
-
-      %{counts: false} ->
-        Enum.uniq(result)
-    end
-  end
-
-  # @doc false
-  # def recompile_pattern(pid, keyword_list) do
-  #   :binary.compile_pattern(keyword_list)
-  #   Pattern.recompile_pattern(pid, keyword_list)
-  # end
-
   defp via_registry_tuple(name), do: {:via, Registry, {PatternRegistry, name}}
 
   defp from_registry_tuple({:via, _, {_, name}}), do: name
 
+  # TODO: prevent substring matches!
   defp get_matches(name, string) do
-    %{pattern: pattern, keywords_map: keywords_map, options: opts} = Pattern.get(name)
+    case Registry.lookup(PatternRegistry, name) do
+      [{pid, _}] ->
+        %{pattern: pattern, keywords_map: keywords_map, options: opts} = Pattern.get(pid)
 
-    result =
-      string
-      |> :binary.matches(pattern)
-      |> Enum.map(fn bit_match -> pull_keyword_match(string, bit_match, keywords_map, opts) end)
+        result =
+          string
+          |> :binary.matches(pattern)
+          |> Enum.map(fn bit_match -> pull_keyword_match(string, bit_match, keywords_map, opts) end)
 
-    {from_registry_tuple(name), result}
+        {:ok, {name, result}}
+
+      [] ->
+        {:error, name}
+    end
   end
 
   defp pull_keyword_match(string, bit_match, keywords_map, opts) do

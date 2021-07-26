@@ -14,6 +14,8 @@ It’s increasingly frustrating to pay for prime membership, but feel like your 
 Amazon should be doing a better job at that.
 """
 
+# Use string names instead of atoms if dynamically generating patterns.
+
 iex> Keywords.parse(string, [:clothing_brands, :retail_companies])
 ["converse", "amazon", "nike"]
 
@@ -69,8 +71,8 @@ options include:
 iex> Keywords.new_pattern(:stocks, ["TSLA", "XOM", "AMZN", "FB", "LMT", "NVDA"])
 {:ok, location}
 
-iex> Keywords.parse(" XOM AAPL AMZN $TSLA buy now, ++ PLTR and $AMZN", :stocks)
-["TSLA", "XOM", "AMZN"]
+iex> Keywords.parse("My favorite picks right now are $NVDA and $AMZN 🚀🚀🚀, but XOM and fb have my attention 🌝", :stocks)
+["NVDA", "AMZN", "XOM", "FB"]
 
 iex> Keywords.kill_pattern(:stocks)
 {:ok, :stocks}
