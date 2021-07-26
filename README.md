@@ -17,13 +17,13 @@ Amazon should be doing a better job at that.
 # Use string names instead of atoms if dynamically generating patterns.
 
 iex> Keywords.parse(string, [:clothing_brands, :retail_companies])
-["converse", "amazon", "nike"]
+{:ok, ["converse", "amazon", "nike"]}
 
 iex> Keywords.parse(string, [:clothing_brands, :retail_companies], counts: true)
-[{"converse", 4}, {"amazon", 2}, {"nike", 1}]
+{:ok, [{"converse", 4}, {"amazon", 2}, {"nike", 1}]}
 
 iex> Keywords.parse(string, [:clothing_brands, :retail_companies], aggreagte: false)
-[clothing_brands: ["converse", "nike"], retail_companies: ["amazon"]]
+{:ok, [clothing_brands: ["converse", "nike"], retail_companies: ["amazon"]]}
 ```
 
 ## Docs
@@ -72,7 +72,7 @@ iex> Keywords.new_pattern(:stocks, ["TSLA", "XOM", "AMZN", "FB", "LMT", "NVDA"])
 {:ok, location}
 
 iex> Keywords.parse("My favorite picks right now are $NVDA and $AMZN 🚀🚀🚀, but XOM and fb have my attention 🌝", :stocks)
-["NVDA", "AMZN", "XOM", "FB"]
+{:ok, ["NVDA", "AMZN", "XOM", "FB"]}
 
 iex> Keywords.kill_pattern(:stocks)
 {:ok, :stocks}
