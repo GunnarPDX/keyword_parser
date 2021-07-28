@@ -14,16 +14,14 @@ It’s increasingly frustrating to pay for prime membership, but feel like your 
 Amazon should be doing a better job at that.
 """
 
-# Use string names instead of atoms if dynamically generating patterns.
-
-iex> Keywords.parse(string, [:clothing_brands, :retail_companies])
+iex> Keywords.parse(string, ["clothing_brands", "retail_companies"])
 {:ok, ["converse", "amazon", "nike"]}
 
-iex> Keywords.parse(string, [:clothing_brands, :retail_companies], counts: true)
+iex> Keywords.parse(string, ["clothing_brands", "retail_companies"], counts: true)
 {:ok, [{"converse", 4}, {"amazon", 2}, {"nike", 1}]}
 
-iex> Keywords.parse(string, [:clothing_brands, :retail_companies], aggreagte: false)
-{:ok, [clothing_brands: ["converse", "nike"], retail_companies: ["amazon"]]}
+iex> Keywords.parse(string, ["clothing_brands", "retail_companies"], aggreagte: false)
+{:ok, ["clothing_brands": ["converse", "nike"], "retail_companies": ["amazon"]]}
 ```
 
 ## Docs
@@ -68,12 +66,12 @@ options include:
 ## Usage
 
 ```elixir
-iex> Keywords.new_pattern(:stocks, ["TSLA", "XOM", "AMZN", "FB", "LMT", "NVDA"])
-{:ok, location}
+iex> Keywords.new_pattern("stocks", ["TSLA", "XOM", "AMZN", "FB", "LMT", "NVDA"])
+{:ok, "stocks"}
 
-iex> Keywords.parse("My favorite picks right now are $NVDA and $AMZN 🚀🚀🚀, but XOM and fb have my attention 🌝", :stocks)
+iex> Keywords.parse("My favorite picks right now are $NVDA and $AMZN 🚀🚀🚀, but XOM and fb have my attention 🌝", "stocks")
 {:ok, ["NVDA", "AMZN", "XOM", "FB"]}
 
-iex> Keywords.kill_pattern(:stocks)
+iex> Keywords.kill_pattern("stocks")
 {:ok, :stocks}
 ```

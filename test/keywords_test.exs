@@ -40,6 +40,16 @@ defmodule KeywordsTest do
       result = Keywords.new_pattern(:all, ["TSLA", "XOM", "AMZN"])
       assert result == {:error, :reserved_name}
     end
+
+    test "nil pattern name" do
+      result = Keywords.new_pattern(nil, ["TSLA", "XOM", "AMZN"])
+      assert result == {:error, :invalid_pattern_name}
+    end
+
+    test "nil keywords" do
+      result = Keywords.new_pattern(:nothing, nil)
+      assert result == {:error, :invalid_keywords}
+    end
   end
 
   describe "kill_pattern" do
@@ -81,35 +91,35 @@ defmodule KeywordsTest do
       Keywords.new_pattern(:stocks_3, ["NVDA", "AMZN", "XOM", "FB"])
 
       result = Keywords.parse(" XOM AAPL $TSLA buy now, ++ PLTR and $AMZN", :stocks_1)
-      compare_parse_results result, ["AMZN", "TSLA", "XOM"]
+      compare_parse_results(result, ["AMZN", "TSLA", "XOM"])
 
       result = Keywords.parse(" XOM AAPL $TSLA buy now, ++ PLTR and $AMZN", :stocks_2)
-      compare_parse_results result, ["AAPL", "PLTR"]
+      compare_parse_results(result, ["AAPL", "PLTR"])
 
       result = Keywords.parse(" My favorite picks right now are $NVDA and $AMZN 🚀🚀🚀, but XOM and fb have my attention 🌝", :stocks_3)
-      compare_parse_results result, ["AMZN", "FB", "NVDA", "XOM"]
+      compare_parse_results(result, ["AMZN", "FB", "NVDA", "XOM"])
     end
 
     test "simple no matches" do
       Keywords.new_pattern(:stocks, ["TSLA", "XOM", "AMZN"])
       result = Keywords.parse("a|n[xwn;qw%dl$qm*w", :stocks)
-      assert result == []
+      compare_parse_results(result, [])
     end
 
     test "no content" do
       Keywords.new_pattern(:stocks, ["TSLA", "XOM", "AMZN"])
       result = Keywords.parse(nil, :stocks)
-      assert result == []
+      compare_parse_results(result, [])
     end
 
     test "non existent pattern" do
       result = Keywords.parse(" XOM AAPL $TSLA buy now, ++ PLTR and $AMZN", :qwertyuiop)
-      assert result == []
+      assert result == {:error, :pattern_not_found}
     end
 
     test "nil pattern" do
       result = Keywords.parse(" XOM AAPL $TSLA buy now, ++ PLTR and $AMZN", nil)
-      assert result == []
+      assert result == {:error, :pattern_not_found}
     end
 
     test "multiple patterns" do
@@ -117,7 +127,7 @@ defmodule KeywordsTest do
       Keywords.new_pattern(:stocks_2, ["PLTR", "AAPL"])
 
       result = Keywords.parse(" XOM AAPL $TSLA buy now, ++ PLTR and $AMZN", [:stocks_1, :stocks_2])
-      compare_parse_results result, ["AAPL", "AMZN", "PLTR", "TSLA", "XOM"]
+      compare_parse_results(result, ["AAPL", "AMZN", "PLTR", "TSLA", "XOM"])
     end
 
     test ":all patterns" do
@@ -125,7 +135,7 @@ defmodule KeywordsTest do
       Keywords.new_pattern(:stocks_2, ["PLTR", "AAPL"])
 
       result = Keywords.parse(" XOM AAPL AMZN $TSLA buy now, ++ PLTR and $AMZN", :all)
-      compare_parse_results result, ["AAPL", "AMZN", "PLTR", "TSLA", "XOM"]
+      compare_parse_results(result, ["AAPL", "AMZN", "PLTR", "TSLA", "XOM"])
     end
 
     test "single pattern with counts" do
@@ -158,7 +168,7 @@ defmodule KeywordsTest do
       Keywords.new_pattern(:stocks, ["TSLA", "XOM", "AMZN"])
 
       result = Keywords.parse(" XOM AAPL $TSLA buy now, ++ PLTR and $AMZN", :stocks, [aggregate: false])
-      assert result == ["AMZN", "TSLA", "XOM"]
+      compare_parse_results(result, ["AMZN", "TSLA", "XOM"])
     end
   end
 

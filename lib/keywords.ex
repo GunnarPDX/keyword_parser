@@ -23,8 +23,11 @@ defmodule Keywords do
 
   def new_pattern(name, keyword_list, opts \\ [])
   def new_pattern(:all, _, _), do: {:error, :reserved_pattern_name}
+  def new_pattern(nil, _, _), do: {:error, :invalid_pattern_name}
+  def new_pattern(_, nil, _), do: {:error, :invalid_keywords}
+  # {:error, :pattern_not_found}
 
-  def new_pattern(name, keyword_list, opts) do
+  def new_pattern(name, keyword_list, opts) when is_list(keyword_list) do
     opts = Enum.into(opts, @new_pattern_defaults)
 
     pattern =
@@ -113,8 +116,8 @@ defmodule Keywords do
   @parse_defaults %{counts: false, aggregate: true}
 
   def parse(string, pattern_names, opts \\ [])
-  def parse(nil, _, _), do: []
-  def parse(_, nil, _), do: []
+  def parse(nil, _, _), do: {:ok, []}
+  def parse(_, nil, _), do: {:error, :pattern_not_found}
 
   def parse(string, pattern_names, opts) when is_list(pattern_names) do
     opts = Enum.into(opts, @parse_defaults)
