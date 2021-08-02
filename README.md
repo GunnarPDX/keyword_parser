@@ -73,5 +73,5 @@ iex> Keywords.parse("My favorite picks right now are $NVDA and $AMZN 🚀🚀�
 {:ok, ["NVDA", "AMZN", "XOM", "FB"]}
 
 iex> Keywords.kill_pattern("stocks")
-{:ok, :stocks}
+{:ok, "stocks"}
 ```

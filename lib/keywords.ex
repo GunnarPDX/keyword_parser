@@ -128,7 +128,7 @@ defmodule Keywords do
       |> Enum.map(fn name -> get_matches(name, string) end)
       |> Enum.reduce({[], []}, fn
           {:ok, {name, result}}, {results, errors} ->
-            {results ++ [result], errors}
+            {results ++ [{name, result}], errors}
 
           {:error, name}, {results, errors} ->
             {results, errors ++ [name]}

@@ -20,11 +20,13 @@ defmodule KeywordsTest do
 
   describe "new_pattern" do
     test "create new pattern" do
+      kill_all_patterns()
       result = Keywords.new_pattern(:stocks, ["TSLA", "XOM", "AMZN"])
       assert result == {:ok, :stocks}
     end
 
     test "create multiple patterns" do
+      kill_all_patterns()
       result_1 = Keywords.new_pattern(:stocks_1, ["TSLA", "XOM", "AMZN"])
       result_2 = Keywords.new_pattern(:stocks_2, ["PLTR", "AAPL"])
 
@@ -33,12 +35,12 @@ defmodule KeywordsTest do
 
       registry = Registry.select(PatternRegistry, [{{:"$1", :_, :_}, [], [:"$1"]}])
 
-      assert registry = [:stocks_1, :stocks_2]
+      assert registry == [:stocks_2, :stocks_1]
     end
 
     test "wont create pattern named :all" do
       result = Keywords.new_pattern(:all, ["TSLA", "XOM", "AMZN"])
-      assert result == {:error, :reserved_name}
+      assert result == {:error, :reserved_pattern_name}
     end
 
     test "nil pattern name" do
@@ -54,33 +56,38 @@ defmodule KeywordsTest do
 
   describe "kill_pattern" do
     test "kill single pattern" do
-      result = Keywords.new_pattern(:stocks, ["TSLA", "XOM", "AMZN"])
+      kill_all_patterns()
+      Keywords.new_pattern(:stocks, ["TSLA", "XOM", "AMZN"])
 
       registry = Registry.select(PatternRegistry, [{{:"$1", :_, :_}, [], [:"$1"]}])
-      assert registry = [:stocks]
+      assert registry == [:stocks]
 
-      Keywords.kill_pattern(:stocks)
+      result = Keywords.kill_pattern(:stocks)
+      assert result == {:ok, :stocks}
 
       registry = Registry.select(PatternRegistry, [{{:"$1", :_, :_}, [], [:"$1"]}])
-      assert registry = []
+      assert registry == []
     end
 
     test "kill multiple patterns" do
-      result_1 = Keywords.new_pattern(:stocks_1, ["TSLA", "XOM", "AMZN"])
-      result_2 = Keywords.new_pattern(:stocks_2, ["PLTR", "AAPL"])
+      kill_all_patterns()
+      Keywords.new_pattern(:stocks_1, ["TSLA", "XOM", "AMZN"])
+      Keywords.new_pattern(:stocks_2, ["PLTR", "AAPL"])
 
       registry = Registry.select(PatternRegistry, [{{:"$1", :_, :_}, [], [:"$1"]}])
-      assert registry = [:stocks_1, :stocks_2]
+      assert registry == [:stocks_2, :stocks_1]
 
-      Keywords.kill_pattern(:stocks_1)
-
-      registry = Registry.select(PatternRegistry, [{{:"$1", :_, :_}, [], [:"$1"]}])
-      assert registry = [:stocks_2]
-
-      Keywords.kill_pattern(:stocks_2)
+      res = Keywords.kill_pattern(:stocks_1)
+      assert res == {:ok, :stocks_1}
 
       registry = Registry.select(PatternRegistry, [{{:"$1", :_, :_}, [], [:"$1"]}])
-      assert registry = []
+      assert registry == [:stocks_2]
+
+      res = Keywords.kill_pattern(:stocks_2)
+      assert res == {:ok, :stocks_2}
+
+      registry = Registry.select(PatternRegistry, [{{:"$1", :_, :_}, [], [:"$1"]}])
+      assert registry == []
     end
   end
 
@@ -114,7 +121,7 @@ defmodule KeywordsTest do
 
     test "non existent pattern" do
       result = Keywords.parse(" XOM AAPL $TSLA buy now, ++ PLTR and $AMZN", :qwertyuiop)
-      assert result == {:error, :pattern_not_found}
+      assert result == {:error, %{patterns_not_found: :qwertyuiop}}
     end
 
     test "nil pattern" do
@@ -142,15 +149,15 @@ defmodule KeywordsTest do
       Keywords.new_pattern(:stocks, ["TSLA", "XOM", "AMZN"])
 
       result = Keywords.parse(" XOM AAPL AMZN $TSLA buy now, ++ PLTR and $AMZN", :stocks, [counts: true])
-      assert result == [{"AMZN", 2}, {"TSLA", 1}, {"XOM", 1}]
+      assert result == {:ok, [{"AMZN", 2}, {"TSLA", 1}, {"XOM", 1}]}
     end
 
     test "multiple patterns with counts" do
       Keywords.new_pattern(:stocks_1, ["TSLA", "XOM", "AMZN"])
       Keywords.new_pattern(:stocks_2, ["PLTR", "AAPL"])
 
-      result = Keywords.parse(" XOM AAPL AMZN $TSLA buy now, ++ PLTR and $AMZN", [:stocks, :stocks_2], [counts: true])
-      assert result == [{"AAPL", 1}, {"AMZN", 2}, {"PLTR", 1}, {"TSLA", 1}, {"XOM", 1}]
+      result = Keywords.parse(" XOM AAPL AMZN $TSLA buy now, ++ PLTR and $AMZN", [:stocks_1, :stocks_2], [counts: true])
+      assert result == {:ok, [{"AAPL", 1}, {"AMZN", 2}, {"PLTR", 1}, {"TSLA", 1}, {"XOM", 1}]}
     end
 
     test "multiple without aggregation" do
@@ -158,10 +165,10 @@ defmodule KeywordsTest do
       Keywords.new_pattern(:stocks_2, ["PLTR", "AAPL"])
 
       result = Keywords.parse(" XOM AAPL AMZN $TSLA buy now, ++ PLTR and $AMZN", [:stocks_1, :stocks_2], [counts: true, aggregate: false])
-      assert result == [stocks_1: [{"AMZN", 2}, {"TSLA", 1}, {"XOM", 1}], stocks_2: [{"AAPL", 1}, {"PLTR", 1}]]
+      assert result == {:ok, [stocks_1: [{"AMZN", 2}, {"TSLA", 1}, {"XOM", 1}], stocks_2: [{"AAPL", 1}, {"PLTR", 1}]]}
 
       result = Keywords.parse(" XOM AAPL AMZN $TSLA buy now, ++ PLTR and $AMZN", [:stocks_1, :stocks_2], [aggregate: false])
-      assert result == [stocks_1: ["AMZN", "TSLA", "XOM"], stocks_2: ["AAPL", "PLTR"]]
+      assert result == {:ok, [stocks_1: ["XOM", "AMZN", "TSLA"], stocks_2: ["AAPL", "PLTR"]]}
     end
 
     test "single without aggregation" do
@@ -177,6 +184,13 @@ defmodule KeywordsTest do
     valid_result = Enum.sort(valid_result)
 
     assert result == valid_result
+  end
+
+  defp kill_all_patterns do
+    Keywords.kill_pattern(:stocks)
+    Keywords.kill_pattern(:stocks_1)
+    Keywords.kill_pattern(:stocks_2)
+    Keywords.kill_pattern(:stocks_3)
   end
 
 end
