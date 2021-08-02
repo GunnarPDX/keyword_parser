@@ -236,6 +236,30 @@ defmodule Keywords do
     end
   end
 
+
+  # EXAMPLE INPUTS
+  # string = " XOM AAPL AMZN $TSLA buy now, ++ PLTR and $AMZN"
+  # args for 'bit_match' and 'match'
+  # {1, 3}
+  # "XOM"
+  # {10, 4}
+  # "AMZN"
+  # {16, 4}
+  # "TSLA"
+  # {43, 4}
+  # "AMZN"
+  defp remove_substring_matches(bit_match, match, string) do
+    # BEFORE OR AFTER
+    # - space
+    # - punctuation/symbols . , ! ? # $ % ^ & @ ( ) > < / \ | [ ] { } ~ * - + = : ; " ' `
+
+    # BEFORE
+    # - start of string
+
+    # AFTER
+    # - end of string
+  end
+
   defp add_case_variants(keyword_list, %{case_sensitive: true}), do: keyword_list
   defp add_case_variants(keyword_list, %{case_sensitive: false}) do
     uppercase_keyword_list = Enum.map(keyword_list, fn kw -> String.upcase(kw) end)
