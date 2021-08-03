@@ -51,9 +51,9 @@ def deps do
 end
 ```
 
-## Functions
+# Functions
 
-### new_pattern
+## new_pattern
 #### Creates a new keyword pattern from a list of keywords
 ```elixir
 new_pattern(name, keywords_list, opts)
@@ -71,7 +71,7 @@ iex> Keywords.new_pattern("stocks", ["TSLA", "XOM", "AMZN", "FB", "LMT", "NVDA"]
 {:ok, "stocks"}
 ```
 
-### parse
+## parse
 #### Extracts keywords from a string
 ```elixir
 parse(string, pattern_names, opts)
@@ -102,7 +102,7 @@ iex> Keywords.parse("How dare you put pineapple on a pizza you @^%##! %&^?!?! **
 }
 ```
 
-### kill_pattern
+## kill_pattern
 #### Kills pattern agent and removes a pattern from registry
 ```elixir
 kill_pattern(name)
