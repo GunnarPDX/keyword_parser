@@ -60,15 +60,6 @@ new_pattern(name, keywords_list, opts)
 ```
 
 options include:
-- `:case_sensitive` | default = `false` | toggles whether keyword matches case sensitive.
-
-### parse
-#### Extracts keywords from a string
-```elixir
-parse(string, pattern_names, opts)
-```
-
-options include:
 - `case_sensitive:` | default = `false` | toggles whether keywords are case sensitive.
 
 Usage:
@@ -78,6 +69,12 @@ iex> Keywords.new_pattern("stocks", ["TSLA", "XOM", "AMZN", "FB", "LMT", "NVDA"]
 
 iex> Keywords.new_pattern("stocks", ["TSLA", "XOM", "AMZN", "FB", "LMT", "NVDA"], case_sensitive: true)
 {:ok, "stocks"}
+```
+
+### parse
+#### Extracts keywords from a string
+```elixir
+parse(string, pattern_names, opts)
 ```
 
 options include:
