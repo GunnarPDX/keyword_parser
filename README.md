@@ -2,9 +2,19 @@
 
 A keyword parser for extracting words, phrases and simple patterns from strings of text.  
 
-This module allows you to load up multiple keyword patterns for different topics and run those against strings.
+This module allows you to load up multiple keyword patterns for different topics and run those against strings to extract pattern matches.
+When creating a pattern using `new_pattern/2` or `new_pattern/3` a list of keywords/phrases is given along with a name used for identification. 
+When parsing strings of text, pattern names can be given as a list (or one individually) to specify which patterns you want to use when parsing the string.
+The atom `:all` can be passed in as an individual pattern_name argument to invoke the use of all available patterns.
+Once created all patterns get stored as processes and will exist until killed individually (`kill_pattern/1`) or the application is killed as a whole.
 
 ```elixir
+iex> Keywords.new_pattern("clothing_brands", ["converse", "nike", "adidas", "paige", "hanes"])
+{:ok, "clothing_brands"}
+
+iex> Keywords.new_pattern("retail_companies", ["amazon", "walmart", "home depot"])
+{:ok, "retail_companies"}
+
 iex> string = """
 Been wearing converse low tops for the past 20 years. Purchased these maroon Chuck Taylor low tops recently, and I wasn’t thrilled..
 
@@ -45,33 +55,63 @@ end
 
 ### new_pattern
 #### Creates a new keyword pattern from a list of keywords
-```Keywords.new_pattern(name, keywords_list)```
+```elixir
+new_pattern(name, keywords_list, opts)
+```
 
 options include:
-- `:case_sensitive` true/false | default = false | toggles whether keyword matches case sensitive.
+- `:case_sensitive` | default = `false` | toggles whether keyword matches case sensitive.
 
 ### parse
 #### Extracts keywords from a string
-```parse(string, pattern_names, opts)```
+```elixir
+parse(string, pattern_names, opts)
+```
 
 options include:
-- `:counts` true/false | default = false | toggles counts for individual keyword occurrences in results.
-- `:aggregate` true/fale | default = true | toggles grouping by pattern name.
+- `case_sensitive:` | default = `false` | toggles whether keywords are case sensitive.
 
-### kill_pattern
-#### Kills pattern agent and removes a pattern from registry
-```kill_pattern(name)```
-
-
-## Usage
-
+Usage:
 ```elixir
 iex> Keywords.new_pattern("stocks", ["TSLA", "XOM", "AMZN", "FB", "LMT", "NVDA"])
 {:ok, "stocks"}
 
+iex> Keywords.new_pattern("stocks", ["TSLA", "XOM", "AMZN", "FB", "LMT", "NVDA"], case_sensitive: true)
+{:ok, "stocks"}
+```
+
+options include:
+- `:counts` | default = `false` | toggles counts for individual keyword occurrences in results.
+- `:aggregate` | default = `true` | toggles grouping by pattern name.
+
+Usage:
+```elixir
 iex> Keywords.parse("My favorite picks right now are $NVDA and $AMZN 🚀🚀🚀, but XOM and fb have my attention 🌝", "stocks")
 {:ok, ["NVDA", "AMZN", "XOM", "FB"]}
 
-iex> Keywords.kill_pattern("stocks")
-{:ok, "stocks"}
+iex> Keywords.parse("How dare you @^%##! %&^?!?! *****!", "cartoon_profanity")
+{:ok, ["@^%##!", "%&^?!?!", "*****"]}
+
+iex> Keywords.parse("How dare you @^%##! %&^?!?! ***** *****!", "cartoon_profanity", counts: true)
+{:ok, [{"@^%##!", 1}, {"%&^?!?!", 1}, {"*****", 2}]}
+
+iex> Keywords.parse("How dare you put pineapple on a pizza you @^%##! %&^?!?! ***** *****!", ["cartoon_profanity", "illegal_pizza_toppings"], counts: true, aggregate: false)
+{
+  :ok, 
+  [
+    { "cartoon_profanity", [{"@^%##!", 1}, {"%&^?!?!", 1}, {"*****", 2}] }, 
+    { "illegal_pizza_toppings", [{"pineapple", 1}] }
+  ]
+}
+```
+
+### kill_pattern
+#### Kills pattern agent and removes a pattern from registry
+```elixir
+kill_pattern(name)
+```
+Usage:
+```elixir
+iex> Keywords.kill_pattern("common_lyrics")
+{:ok, "common_lyrics"}
 ```
