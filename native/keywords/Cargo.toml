@@ -1,0 +1,13 @@
+[package]
+name = "keywords"
+version = "0.1.0"
+authors = []
+edition = "2018"
+
+[lib]
+name = "keywords"
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+rustler = "0.22.0"
