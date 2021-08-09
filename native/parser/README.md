@@ -1,4 +1,4 @@
-# NIF for Elixir.Keywords
+# NIF for Elixir.Parser
 
 ## To build the NIF module:
 
@@ -7,8 +7,8 @@
 ## To load the NIF:
 
 ```elixir
-defmodule Keywords do
-    use Rustler, otp_app: :keywords, crate: "keywords"
+defmodule Parser do
+    use Rustler, otp_app: :keywords, crate: "parser"
 
     # When your NIF is loaded, it will override this function.
     def add(_a, _b), do: :erlang.nif_error(:nif_not_loaded)

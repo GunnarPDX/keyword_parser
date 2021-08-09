@@ -10,6 +10,8 @@ defmodule Keywords.MixProject do
       deps: deps(),
       description: description(),
       package: package(),
+      compilers: [:rustler] ++ Mix.compilers(),
+      rustler_crates: rustler_crates(),
       name: "keywords",
       source_url: "https://github.com/GunnarPDX/keyword_parser"
     ]
@@ -43,6 +45,12 @@ defmodule Keywords.MixProject do
       files: ~w(lib .formatter.exs mix.exs README* LICENSE*),
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/GunnarPDX/keyword_parser"}
+    ]
+  end
+
+  defp rustler_crates do
+    [
+      keywords: [path: "native/parser", mode: if(Mix.env() == :prod, do: :release, else: :debug)]
     ]
   end
 

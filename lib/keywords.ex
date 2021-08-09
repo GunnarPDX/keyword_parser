@@ -207,7 +207,7 @@ defmodule Keywords do
 
   defp via_registry_tuple(name), do: {:via, Registry, {PatternRegistry, name}}
 
-  defp from_registry_tuple({:via, _, {_, name}}), do: name
+  # defp from_registry_tuple({:via, _, {_, name}}), do: name
 
   # TODO: prevent substring matches!
   defp get_matches(name, string) do
