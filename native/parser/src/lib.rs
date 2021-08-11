@@ -12,14 +12,14 @@ mod atoms {
 
 #[derive(NifTuple)]
 pub struct ModuleResourceResponse {
-    ok: rustler::Atom,
+    status: rustler::Atom,
     result: String,
 }
 
 // NifResult<Atom>
 #[rustler::nif]
 fn return_atom() -> NifResult<ModuleResourceResponse> {
-  return Ok(ModuleResourceResponse {ok: atoms::ok(), result: "Success".to_string()});
+  return Ok(ModuleResourceResponse {status: atoms::ok(), result: "Success".to_string()});
 }
 
 pub const PERMITTED_CHARS: &'static [char] = &[
@@ -36,13 +36,13 @@ pub const PERMITTED_CHARS: &'static [char] = &[
 //  Parser.find_matches(0, 3, "the quick hello brown fox jumps")
 
 #[rustler::nif]
-fn find_matches(start_pos: usize, match_length: usize, text: String) -> (bool, String) {
+fn find_matches(start_pos: usize, match_length: usize, text: String) ->  NifResult<ModuleResourceResponse> {
     let string_length = text.chars().count();
 
-    println!("{:?}", atoms::ok());
+    // println!("{:?}", atoms::ok());
 
     if ((start_pos + match_length) > string_length) || (match_length <= 0) {
-      return (false, "".to_string());
+      return Ok(ModuleResourceResponse {status: atoms::error(), result: "".to_string()});
     };
 
     let end_pos = start_pos + match_length;
@@ -66,7 +66,7 @@ fn find_matches(start_pos: usize, match_length: usize, text: String) -> (bool, S
       }
     };
 
-    return (false, "".to_string());
+    return Ok(ModuleResourceResponse {status: atoms::error(), result: "".to_string()});
 }
 
 fn is_leading_char_valid(start_pos: usize, text: &String) -> bool {
@@ -79,9 +79,9 @@ fn is_trailing_char_valid(end_pos: usize, text: &String) -> bool {
   return PERMITTED_CHARS.contains(&trailing_char);
 }
 
-fn get_match(start_pos: usize, end_pos: usize, text: &String) -> (bool, String) {
+fn get_match(start_pos: usize, end_pos: usize, text: &String) ->  NifResult<ModuleResourceResponse> {
   let res = text.substring(start_pos, end_pos).to_string();
-  return (true, res);
+  return Ok(ModuleResourceResponse {status: atoms::ok(), result: res});
 }
 
 rustler::init!("Elixir.Parser", [find_matches, return_atom]);
