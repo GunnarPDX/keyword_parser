@@ -1,4 +1,26 @@
+use rustler::{Atom, Encoder, Env, NifResult, NifTuple, Term};
+#[macro_use] extern crate lazy_static;
+
 use substring::Substring;
+
+mod atoms {
+    rustler::atoms! {
+        ok,
+        error,
+    }
+}
+
+#[derive(NifTuple)]
+pub struct ModuleResourceResponse {
+    ok: rustler::Atom,
+    result: String,
+}
+
+// NifResult<Atom>
+#[rustler::nif]
+fn return_atom() -> NifResult<ModuleResourceResponse> {
+  return Ok(ModuleResourceResponse {ok: atoms::ok(), result: "Success".to_string()});
+}
 
 pub const PERMITTED_CHARS: &'static [char] = &[
   ' ', '.', ',', '!', '?', '#', '$', '%', '^', '&', '@',
@@ -16,6 +38,8 @@ pub const PERMITTED_CHARS: &'static [char] = &[
 #[rustler::nif]
 fn find_matches(start_pos: usize, match_length: usize, text: String) -> (bool, String) {
     let string_length = text.chars().count();
+
+    println!("{:?}", atoms::ok());
 
     if ((start_pos + match_length) > string_length) || (match_length <= 0) {
       return (false, "".to_string());
@@ -60,4 +84,4 @@ fn get_match(start_pos: usize, end_pos: usize, text: &String) -> (bool, String) 
   return (true, res);
 }
 
-rustler::init!("Elixir.Parser", [find_matches]);
+rustler::init!("Elixir.Parser", [find_matches, return_atom]);
