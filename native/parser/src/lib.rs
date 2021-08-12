@@ -1,4 +1,4 @@
-use rustler::{Atom, Encoder, Env, NifResult, NifTuple, Term};
+use rustler::{Atom, Encoder, NifResult, NifTuple, ListIterator};
 #[macro_use] extern crate lazy_static;
 
 use substring::Substring;
@@ -12,13 +12,26 @@ mod atoms {
 
 #[derive(NifTuple)]
 pub struct ModuleResourceResponse {
-    status: rustler::Atom,
+    status: Atom,
     result: String,
+}
+
+#[derive(NifTuple)]
+pub struct BitMatch {
+    start_pos: usize,
+    match_length: usize,
 }
 
 // NifResult<Atom>
 #[rustler::nif]
-fn return_atom() -> NifResult<ModuleResourceResponse> {
+fn return_atom(pairs: ListIterator) -> NifResult<ModuleResourceResponse> {
+  for pair in pairs {
+      //let name = atom.atom_to_string()?;
+      //let pm: BitMatch = pair.decode::<BitMatch>();
+      //println!("{:?}", pm);
+      println!("{:?}", pair);
+  }
+
   return Ok(ModuleResourceResponse {status: atoms::ok(), result: "Success".to_string()});
 }
 
