@@ -1,5 +1,5 @@
 use rustler::{Atom, NifResult, NifTuple, ListIterator};
-#[macro_use] extern crate lazy_static;
+//#[macro_use] extern crate lazy_static;
 
 use substring::Substring;
 
@@ -13,7 +13,7 @@ mod atoms {
 #[derive(NifTuple)]
 pub struct ModuleResourceResponse {
     status: Atom,
-    result: String,
+    result: Vec<String>,
 }
 
 #[derive(NifTuple)]
@@ -22,37 +22,24 @@ pub struct BitMatch {
     match_length: usize,
 }
 
-// NifResult<Atom>
+
+// Parser.find_matches([{10, 5}, {22, 3}], "the quick hello brown fox jumps")
+
 #[rustler::nif]
-fn return_atom(pairs: ListIterator) -> NifResult<ModuleResourceResponse> {
-  //for pair in pairs {
-      //let name = atom.atom_to_string()?;
-      //let pm = pair.decode::<i64>();
-      //let (start, len): (usize, usize) = pair.decode().unwrap();;
+fn find_matches(binary_matches: ListIterator, text: String) ->  NifResult<ModuleResourceResponse> {
+  let pairs_list: NifResult<Vec<(usize, usize)>> = binary_matches.map(|x| x.decode::<(usize, usize)>()).collect::<NifResult<Vec<(usize, usize)>>>();
 
-      //match pair.decode() {
-      //}
-      //println!("{:?}", start);
-      //println!("{:?}", pair);
-  //}
+  match pairs_list {
+    Ok(pairs) => {
+        let keyword_matches: Vec<String> = pairs.iter().map( |(start, length)| find_match(*start, *length, &text) ).collect();
 
-  let result: NifResult<Vec<(usize, usize)>> = pairs.map(|x| x.decode::<(usize, usize)>()).collect::<NifResult<Vec<(usize, usize)>>>();
-
-  match result {
-    Ok(list) => {
-        for (start, length) in list {
-          println!("{:?}", start);
-        }
-        //println!("{:?}", list);
+        return Ok(ModuleResourceResponse {status: atoms::ok(), result: keyword_matches});
+        //println!("{:?}", keyword_matches);
     },
-    Err(e) => {
-      return Ok(ModuleResourceResponse {status: atoms::error(), result: "Bad Argument Error".to_string()});
-        // ... sk is not available, and e explains why ...
+    Err(_e) => {
+      return Ok(ModuleResourceResponse {status: atoms::error(), result: [].to_vec()});
     },
   }
-  //println!("{:?}", result);
-
-  return Ok(ModuleResourceResponse {status: atoms::ok(), result: "Success".to_string()});
 }
 
 
@@ -63,21 +50,12 @@ pub const PERMITTED_CHARS: &'static [char] = &[
   '~', '*', '-', '_', '+', '=', ':', ';', '"', '\'', '`'
 ];
 
-// pattern = :binary.compile_pattern(["the", "hello", "fox"])
-// :binary.matches("the quick hello brown fox jumps", pattern)
-// [{10, 5}, {22, 3}]
-// Parser.find_matches(10, 5, "the quick hello brown fox jumps")
-// Parser.find_matches(22, 3, "the quick hello brown fox jumps")
-//  Parser.find_matches(0, 3, "the quick hello brown fox jumps")
-
-#[rustler::nif]
-fn find_matches(start_pos: usize, match_length: usize, text: String) ->  NifResult<ModuleResourceResponse> {
+fn find_match(start_pos: usize, match_length: usize, text: &String) ->  String {
     let string_length = text.chars().count();
 
-    // println!("{:?}", atoms::ok());
-
     if ((start_pos + match_length) > string_length) || (match_length <= 0) {
-      return Ok(ModuleResourceResponse {status: atoms::error(), result: "".to_string()});
+      return "".to_string();
+      //return Ok(ModuleResourceResponse {status: atoms::error(), result: "".to_string()});
     };
 
     let end_pos = start_pos + match_length;
@@ -101,7 +79,8 @@ fn find_matches(start_pos: usize, match_length: usize, text: String) ->  NifResu
       }
     };
 
-    return Ok(ModuleResourceResponse {status: atoms::error(), result: "".to_string()});
+    //return Ok(ModuleResourceResponse {status: atoms::error(), result: "".to_string()});
+    return "".to_string();
 }
 
 fn is_leading_char_valid(start_pos: usize, text: &String) -> bool {
@@ -114,9 +93,10 @@ fn is_trailing_char_valid(end_pos: usize, text: &String) -> bool {
   return PERMITTED_CHARS.contains(&trailing_char);
 }
 
-fn get_match(start_pos: usize, end_pos: usize, text: &String) ->  NifResult<ModuleResourceResponse> {
+fn get_match(start_pos: usize, end_pos: usize, text: &String) -> String {
   let res = text.substring(start_pos, end_pos).to_string();
-  return Ok(ModuleResourceResponse {status: atoms::ok(), result: res});
+  //return Ok(ModuleResourceResponse {status: atoms::ok(), result: res});
+  return res;
 }
 
-rustler::init!("Elixir.Parser", [find_matches, return_atom]);
+rustler::init!("Elixir.Parser", [find_matches]);
