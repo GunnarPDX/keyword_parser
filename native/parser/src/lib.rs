@@ -1,4 +1,4 @@
-use rustler::{Atom, Encoder, NifResult, NifTuple, ListIterator};
+use rustler::{Atom, NifResult, NifTuple, ListIterator};
 #[macro_use] extern crate lazy_static;
 
 use substring::Substring;
@@ -25,15 +25,37 @@ pub struct BitMatch {
 // NifResult<Atom>
 #[rustler::nif]
 fn return_atom(pairs: ListIterator) -> NifResult<ModuleResourceResponse> {
-  for pair in pairs {
+  //for pair in pairs {
       //let name = atom.atom_to_string()?;
-      //let pm: BitMatch = pair.decode::<BitMatch>();
-      //println!("{:?}", pm);
-      println!("{:?}", pair);
+      //let pm = pair.decode::<i64>();
+      //let (start, len): (usize, usize) = pair.decode().unwrap();;
+
+      //match pair.decode() {
+      //}
+      //println!("{:?}", start);
+      //println!("{:?}", pair);
+  //}
+
+  let result: NifResult<Vec<(usize, usize)>> = pairs.map(|x| x.decode::<(usize, usize)>()).collect::<NifResult<Vec<(usize, usize)>>>();
+
+  match result {
+    Ok(list) => {
+        for (start, length) in list {
+          println!("{:?}", start);
+        }
+        //println!("{:?}", list);
+    },
+    Err(e) => {
+      return Ok(ModuleResourceResponse {status: atoms::error(), result: "Bad Argument Error".to_string()});
+        // ... sk is not available, and e explains why ...
+    },
   }
+  //println!("{:?}", result);
 
   return Ok(ModuleResourceResponse {status: atoms::ok(), result: "Success".to_string()});
 }
+
+
 
 pub const PERMITTED_CHARS: &'static [char] = &[
   ' ', '.', ',', '!', '?', '#', '$', '%', '^', '&', '@',
