@@ -1,0 +1,15 @@
+[package]
+name = "parser"
+version = "0.1.0"
+authors = []
+edition = "2018"
+
+[lib]
+name = "parser"
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+rustler = "0.22.0"
+substring = "1.4.5"
+lazy_static = "1.4.0"
