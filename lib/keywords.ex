@@ -11,7 +11,8 @@ defmodule Keywords do
 
   opts
   -> case_sensitive: true/false
-  defaults -> case_sensitive: false
+  -> substrings: true/false
+  defaults -> case_sensitive: false, substrings: false
 
   ## Examples
       iex> Keywords.new_pattern(:stocks, ["TSLA", "XOM", "AMZN"])
@@ -19,7 +20,7 @@ defmodule Keywords do
       iex> Keywords.new_pattern(:stocks, ["TSLA", "XOM", "AMZN"])
       {:error, :already_started}
   """
-  @new_pattern_defaults %{case_sensitive: false}
+  @new_pattern_defaults %{substrings: false, case_sensitive: false}
 
   def new_pattern(name, keyword_list, opts \\ [])
   def new_pattern(:all, _, _), do: {:error, :reserved_pattern_name}
@@ -122,13 +123,16 @@ defmodule Keywords do
   def parse(string, pattern_names, opts) when is_list(pattern_names) do
     opts = Enum.into(opts, @parse_defaults)
 
+    # remove non utf-8 chars
+    string = strip_utf(string)
+
     result_sets =
       pattern_names
       |> Enum.map(fn name -> name end) # via registry_tuple...
-      |> Enum.map(fn name -> get_matches(name, string) end)
+      |> Enum.map(fn name -> get_pattern_matches(name, string) end)
       |> Enum.reduce({[], []}, fn
           {:ok, {name, result}}, {results, errors} ->
-            {results ++ [{name, result}], errors}
+            {[{name, result}|results], errors}
 
           {:error, name}, {results, errors} ->
             {results, errors ++ [name]}
@@ -154,7 +158,10 @@ defmodule Keywords do
   def parse(string, pattern_name, opts) do
     opts = Enum.into(opts, @parse_defaults)
 
-    case get_matches(pattern_name, string) do
+    # remove non utf-8 chars
+    string = strip_utf(string)
+
+    case get_pattern_matches(pattern_name, string) do
       {:ok, {_name, result}} ->
         matches = process_single_pattern_opts(result, opts)
         {:ok, matches}
@@ -206,59 +213,115 @@ defmodule Keywords do
   end
 
   defp via_registry_tuple(name), do: {:via, Registry, {PatternRegistry, name}}
-
   # defp from_registry_tuple({:via, _, {_, name}}), do: name
 
-  # TODO: prevent substring matches!
-  defp get_matches(name, string) do
+
+
+  # get pattern
+  # -> does exist
+  #    get binary matches from string
+  #    get string matches from string
+  #    -> no substrings allowed
+  #       use rust nif
+  #       -> is case sensitive
+  #          get values from keywords_map
+  #       -> not case sensitive
+
+  # pull bit matches from string
+
+
+
+
+  defp get_pattern_matches(name, string) do
     case Registry.lookup(PatternRegistry, name) do
       [{pid, _}] ->
         %{pattern: pattern, keywords_map: keywords_map, options: opts} = Pattern.get(pid)
 
-        result =
-          string
-          |> :binary.matches(pattern)
-          |> Enum.map(fn bit_match -> pull_keyword_match(string, bit_match, keywords_map, opts) end)
+        #result =
+        #  string
+        #  |> :binary.matches(pattern)
+        #  |> Enum.map(fn bit_match -> pull_keyword_match(string, bit_match, keywords_map, opts) end)
 
-        {:ok, {name, result}}
+        string
+        |> :binary.matches(pattern)
+        |> pull_matches(name, string, keywords_map, opts)
+
+        #{:ok, {name, result}}
 
       [] ->
         {:error, name}
     end
   end
 
-  defp pull_keyword_match(string, bit_match, keywords_map, opts) do
-    match = :binary.part(string, bit_match)
+  defp pull_matches(bit_matches, name, string, keywords_map, pattern_opts) do
+    case pattern_opts do
+      %{substrings: false, case_sensitive: false} ->
+        get_full_string_matches(name, string, bit_matches)
+        |> get_original_keyword_case(keywords_map)
 
-    case opts.case_sensitive do
-      false -> keywords_map[String.downcase(match)]
-      _ -> match
+      %{substrings: false, case_sensitive: true} ->
+        get_full_string_matches(name, string, bit_matches)
+
+      %{substrings: true, case_sensitive: true} ->
+        get_full_string_matches(name, string, bit_matches)
+        |> get_original_keyword_case(keywords_map)
+
+      %{substrings: true, case_sensitive: false} ->
+        get_full_string_matches(name, string, bit_matches)
+
     end
   end
 
+  defp get_full_string_matches(name, string, bit_matches) do
+    case Parser.find_matches(bit_matches, string) do
+      {:ok, keywords} ->
+        {:ok, {name, keywords}}
 
-  # EXAMPLE INPUTS
-  # string = " XOM AAPL AMZN $TSLA buy now, ++ PLTR and $AMZN"
-  # args for 'bit_match' and 'match'
-  # {1, 3}
-  # "XOM"
-  # {10, 4}
-  # "AMZN"
-  # {16, 4}
-  # "TSLA"
-  # {43, 4}
-  # "AMZN"
-  defp remove_substring_matches(bit_match, match, string) do
-    # BEFORE OR AFTER
-    # - space
-    # - punctuation/symbols . , ! ? # $ % ^ & @ ( ) > < / \ | [ ] { } ~ * - + = : ; " ' `
-
-    # BEFORE
-    # - start of string
-
-    # AFTER
-    # - end of string
+      _ ->
+        {:error, name}
+    end
   end
+
+  defp get_any_matches(name, string, bit_matches) do
+    keywords = Enum.map(bit_matches, fn bit_match -> match = :binary.part(string, bit_match) end)
+    {:ok, {name, keywords}}
+  end
+
+  defp get_original_keyword_case({:error, _name} = err, _), do: err
+  defp get_original_keyword_case({:ok, {name, keywords}}, keywords_map) do
+    keywords = Enum.map(keywords, fn keyword -> keywords_map[String.downcase(keyword)] end)
+    {:ok, {name, keywords}}
+  end
+
+
+
+
+
+
+
+  defp strip_utf(str) do
+    strip_utf_helper(str, [])
+  end
+
+  defp strip_utf_helper(<<x :: utf8>> <> rest, acc) when x <= 127 do
+    strip_utf_helper rest, [x | acc]
+  end
+
+  defp strip_utf_helper(<<x>> <> rest, acc), do: strip_utf_helper(rest, acc)
+
+  defp strip_utf_helper("", acc) do
+    acc
+    |> :lists.reverse
+    |> List.to_string
+  end
+
+
+
+
+
+
+
+
 
   defp add_case_variants(keyword_list, %{case_sensitive: true}), do: keyword_list
   defp add_case_variants(keyword_list, %{case_sensitive: false}) do

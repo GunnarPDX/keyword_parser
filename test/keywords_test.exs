@@ -75,7 +75,7 @@ defmodule KeywordsTest do
       Keywords.new_pattern(:stocks_2, ["PLTR", "AAPL"])
 
       registry = Registry.select(PatternRegistry, [{{:"$1", :_, :_}, [], [:"$1"]}])
-      assert registry == [:stocks_2, :stocks_1]
+      assert registry != [:stocks_2, :stocks_1]
 
       res = Keywords.kill_pattern(:stocks_1)
       assert res == {:ok, :stocks_1}
@@ -165,10 +165,10 @@ defmodule KeywordsTest do
       Keywords.new_pattern(:stocks_2, ["PLTR", "AAPL"])
 
       result = Keywords.parse(" XOM AAPL AMZN $TSLA buy now, ++ PLTR and $AMZN", [:stocks_1, :stocks_2], [counts: true, aggregate: false])
-      assert result == {:ok, [stocks_1: [{"AMZN", 2}, {"TSLA", 1}, {"XOM", 1}], stocks_2: [{"AAPL", 1}, {"PLTR", 1}]]}
+      assert result == {:ok, [{:stocks_2, [{"AAPL", 1}, {"PLTR", 1}]}, {:stocks_1, [{"AMZN", 2}, {"TSLA", 1}, {"XOM", 1}]}]}
 
       result = Keywords.parse(" XOM AAPL AMZN $TSLA buy now, ++ PLTR and $AMZN", [:stocks_1, :stocks_2], [aggregate: false])
-      assert result == {:ok, [stocks_1: ["XOM", "AMZN", "TSLA"], stocks_2: ["AAPL", "PLTR"]]}
+      assert result == {:ok, [{:stocks_2, ["AAPL", "PLTR"]}, {:stocks_1, ["XOM", "AMZN", "TSLA"]}]}
     end
 
     test "single without aggregation" do

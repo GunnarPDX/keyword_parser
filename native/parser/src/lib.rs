@@ -16,14 +16,11 @@ pub struct ModuleResourceResponse {
     result: Vec<String>,
 }
 
-#[derive(NifTuple)]
-pub struct BitMatch {
-    start_pos: usize,
-    match_length: usize,
-}
-
-
 // Parser.find_matches([{10, 5}, {22, 3}], "the quick hello brown fox jumps")
+// Parser.find_matches([{34, 4}, {44, 4}, {67, 3}, {75, 2}], " My favorite picks right now are $NVDA and $AMZN 🚀🚀🚀, but XOM and fb have my attention 🌝
+// Parser.find_matches([{67, 3}], " My favorite picks right now are $NVDA and $AMZN 🚀🚀🚀, but XOM and fb have my attention 🌝
+// Parser.find_matches([{75, 2}], " My favorite picks right now are $NVDA and $AMZN 🚀🚀🚀, but XOM and fb have my attention 🌝
+// Parser.find_matches([{50, 2}], " My favorite picks right now are $NVDA and $AMZN 🚀🚀🚀, but XOM and fb have my attention 🌝
 
 #[rustler::nif]
 fn find_matches(binary_matches: ListIterator, text: String) ->  NifResult<ModuleResourceResponse> {
@@ -41,8 +38,6 @@ fn find_matches(binary_matches: ListIterator, text: String) ->  NifResult<Module
     },
   }
 }
-
-
 
 pub const PERMITTED_CHARS: &'static [char] = &[
   ' ', '.', ',', '!', '?', '#', '$', '%', '^', '&', '@',
@@ -85,6 +80,11 @@ fn find_match(start_pos: usize, match_length: usize, text: &String) ->  String {
 
 fn is_leading_char_valid(start_pos: usize, text: &String) -> bool {
   let leading_char = text.chars().nth(start_pos - 1).unwrap();
+
+  //println!("{:?}", leading_char);
+  //println!("{:?}", text.chars().nth(start_pos).unwrap());
+  //println!("{:?}", text.chars().nth(start_pos + 1).unwrap());
+
   return PERMITTED_CHARS.contains(&leading_char);
 }
 
