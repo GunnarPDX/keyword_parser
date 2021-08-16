@@ -60,6 +60,7 @@ new_pattern(name, keywords_list, opts)
 ```
 
 options include:
+- `substrings:` | default = `false` | toggles whether keywords can be matched as substrings.
 - `case_sensitive:` | default = `false` | toggles whether keywords are case sensitive.
 
 Usage:
@@ -69,6 +70,13 @@ iex> Keywords.new_pattern("stocks", ["TSLA", "XOM", "AMZN", "FB", "LMT", "NVDA"]
 
 iex> Keywords.new_pattern("stocks", ["TSLA", "XOM", "AMZN", "FB", "LMT", "NVDA"], case_sensitive: true)
 {:ok, "stocks"}
+
+iex> Keywords.new_pattern("stocks", ["TSLA", "XOM", "AMZN", "FB", "LMT", "NVDA"], case_sensitive: true, substrings: true)
+{:ok, "stocks"}
+
+# When substrings are allowed
+iex> Keywords.parse("OAMZNG 🌝", "stocks")
+{:ok, ["AMZN"]}
 ```
 
 ## parse
