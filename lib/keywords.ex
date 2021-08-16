@@ -242,11 +242,11 @@ defmodule Keywords do
         get_full_string_matches(name, string, bit_matches)
 
       %{substrings: true, case_sensitive: true} ->
-        get_full_string_matches(name, string, bit_matches)
+        get_any_matches(name, string, bit_matches)
         |> get_original_keyword_case(keywords_map)
 
       %{substrings: true, case_sensitive: false} ->
-        get_full_string_matches(name, string, bit_matches)
+        get_any_matches(name, string, bit_matches)
 
     end
   end
@@ -262,7 +262,7 @@ defmodule Keywords do
   end
 
   defp get_any_matches(name, string, bit_matches) do
-    keywords = Enum.map(bit_matches, fn bit_match -> match = :binary.part(string, bit_match) end)
+    keywords = Enum.map(bit_matches, fn bit_match -> :binary.part(string, bit_match) end)
     {:ok, {name, keywords}}
   end
 
@@ -280,7 +280,7 @@ defmodule Keywords do
     strip_utf_helper rest, [x | acc]
   end
 
-  defp strip_utf_helper(<<x>> <> rest, acc), do: strip_utf_helper(rest, acc)
+  defp strip_utf_helper(<<_>> <> rest, acc), do: strip_utf_helper(rest, acc)
 
   defp strip_utf_helper("", acc) do
     acc

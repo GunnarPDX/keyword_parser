@@ -94,7 +94,7 @@ defmodule KeywordsTest do
   describe "parse" do
     test "simple usage" do
       kill_all_patterns()
-      Keywords.new_pattern(:stocks_1, ["TSLA", "XOM", "AMZN"])
+      Keywords.new_pattern(:stocks_1, ["TSLA", "XOM", "AMZN"], substrings: true)
       Keywords.new_pattern(:stocks_2, ["PLTR", "AAPL"])
       Keywords.new_pattern(:stocks_3, ["NVDA", "AMZN", "XOM", "FB"])
 

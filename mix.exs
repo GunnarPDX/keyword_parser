@@ -4,13 +4,13 @@ defmodule Keywords.MixProject do
   def project do
     [
       app: :keywords,
-      version: "0.1.1",
+      version: "0.2.0",
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       description: description(),
       package: package(),
-      compilers: [:rustler] ++ Mix.compilers(),
+      compilers: Mix.compilers(),
       rustler_crates: rustler_crates(),
       name: "keywords",
       source_url: "https://github.com/GunnarPDX/keyword_parser"
