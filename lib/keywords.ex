@@ -132,10 +132,10 @@ defmodule Keywords do
       |> Enum.map(fn name -> get_pattern_matches(name, string) end)
       |> Enum.reduce({[], []}, fn
           {:ok, {name, result}}, {results, errors} ->
-            {[{name, result}|results], errors}
+            {[{name, result} | results], errors}
 
           {:error, name}, {results, errors} ->
-            {results, errors ++ [name]}
+            {results, [errors | name]}
         end)
 
     case result_sets do
@@ -146,13 +146,16 @@ defmodule Keywords do
       {_results, missing_patterns} ->
         {:error, %{patterns_not_found: missing_patterns}}
     end
-
   end
 
   def parse(string, :all, opts) do
-    pattern_names = Registry.select(PatternRegistry, [{{:"$1", :_, :_}, [], [:"$1"]}])
+    case Registry.select(PatternRegistry, [{{:"$1", :_, :_}, [], [:"$1"]}]) do
+      [] ->
+        {:error, :no_patterns_available}
 
-    parse(string, pattern_names, opts)
+      pattern_names ->
+        parse(string, pattern_names, opts)
+    end
   end
 
   def parse(string, pattern_name, opts) do
@@ -215,38 +218,14 @@ defmodule Keywords do
   defp via_registry_tuple(name), do: {:via, Registry, {PatternRegistry, name}}
   # defp from_registry_tuple({:via, _, {_, name}}), do: name
 
-
-
-  # get pattern
-  # -> does exist
-  #    get binary matches from string
-  #    get string matches from string
-  #    -> no substrings allowed
-  #       use rust nif
-  #       -> is case sensitive
-  #          get values from keywords_map
-  #       -> not case sensitive
-
-  # pull bit matches from string
-
-
-
-
   defp get_pattern_matches(name, string) do
     case Registry.lookup(PatternRegistry, name) do
       [{pid, _}] ->
         %{pattern: pattern, keywords_map: keywords_map, options: opts} = Pattern.get(pid)
 
-        #result =
-        #  string
-        #  |> :binary.matches(pattern)
-        #  |> Enum.map(fn bit_match -> pull_keyword_match(string, bit_match, keywords_map, opts) end)
-
         string
         |> :binary.matches(pattern)
         |> pull_matches(name, string, keywords_map, opts)
-
-        #{:ok, {name, result}}
 
       [] ->
         {:error, name}
@@ -293,12 +272,6 @@ defmodule Keywords do
     {:ok, {name, keywords}}
   end
 
-
-
-
-
-
-
   defp strip_utf(str) do
     strip_utf_helper(str, [])
   end
@@ -314,14 +287,6 @@ defmodule Keywords do
     |> :lists.reverse
     |> List.to_string
   end
-
-
-
-
-
-
-
-
 
   defp add_case_variants(keyword_list, %{case_sensitive: true}), do: keyword_list
   defp add_case_variants(keyword_list, %{case_sensitive: false}) do
