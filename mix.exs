@@ -42,7 +42,7 @@ defmodule Keywords.MixProject do
   defp package() do
     [
       # These are the default files included in the package
-      files: ~w(lib .formatter.exs mix.exs README* LICENSE*),
+      files: ~w(lib native .formatter.exs mix.exs README* LICENSE*),
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/GunnarPDX/keyword_parser"}
     ]
