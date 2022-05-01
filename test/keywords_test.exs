@@ -64,11 +64,9 @@ defmodule KeywordsTest do
       registry = Registry.select(PatternRegistry, [{{:"$1", :_, :_}, [], [:"$1"]}])
       assert registry == [:stocks]
 
-      registry = Registry.select(PatternRegistry, [{{:"$1", :_, :_}, [], [:"$1"]}])
-      IO.inspect(registry)
       result = Keywords.kill_pattern(:stocks)
       registry = Registry.select(PatternRegistry, [{{:"$1", :_, :_}, [], [:"$1"]}])
-      IO.inspect(registry)
+
       assert result == {:ok, :stocks}
       assert registry == []
     end
