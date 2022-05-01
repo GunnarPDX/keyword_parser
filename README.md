@@ -124,7 +124,7 @@ iex> Keywords.kill_pattern("common_lyrics")
 ## pattern_exists?
 #### Checks if a pattern exists
 ```elixir
-pattern(name)
+pattern_exists?(name)
 ```
 Usage:
 ```elixir
