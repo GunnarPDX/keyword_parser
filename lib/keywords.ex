@@ -75,6 +75,19 @@ defmodule Keywords do
   end
 
   @doc """
+  Checks if pattern exists.
+
+  ## Examples
+      iex> Keywords.pattern_exists?(:stocks)
+      true
+      iex> Keywords.pattern_exists?(:stonks)
+      false
+  """
+  def pattern_exists?(name) do
+    Registry.lookup(PatternRegistry, name) != []
+  end
+
+  @doc """
   Parses tickers from string
 
   opts

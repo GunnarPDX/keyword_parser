@@ -91,6 +91,19 @@ defmodule KeywordsTest do
     end
   end
 
+  describe "pattern_exists?" do
+    test "check if pattern exists" do
+      kill_all_patterns()
+      Keywords.new_pattern(:stocks, ["TSLA", "XOM", "AMZN"])
+
+      result = Keywords.pattern_exists?(:stocks)
+      assert result == true
+
+      result = Keywords.pattern_exists?(:stonks)
+      assert result == false
+    end
+  end
+
   describe "parse" do
     test "simple usage" do
       kill_all_patterns()
