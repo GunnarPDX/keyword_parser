@@ -25,8 +25,6 @@ defmodule Keywords do
   def new_pattern(name, keyword_list, opts \\ [])
   def new_pattern(:all, _, _), do: {:error, :reserved_pattern_name}
   def new_pattern(nil, _, _), do: {:error, :invalid_pattern_name}
-  def new_pattern(_, nil, _), do: {:error, :invalid_keywords}
-  # {:error, :pattern_not_found}
 
   def new_pattern(name, keyword_list, opts) when is_list(keyword_list) do
     opts = Enum.into(opts, @new_pattern_defaults)
@@ -53,6 +51,8 @@ defmodule Keywords do
     end
   end
 
+  def new_pattern(_, _, _), do: {:error, :invalid_keywords}
+
   @doc """
   Removes pattern by name.
 
@@ -63,11 +63,17 @@ defmodule Keywords do
       {:error, :not_found}
   """
   def kill_pattern(name) do
-    result = Registry.lookup(PatternRegistry, name) |> List.first()
+    results = Registry.lookup(PatternRegistry, name)
+    first_pattern = List.first(results)
 
-    with {pid, _} <- result,
+    with {pid, _} <- first_pattern,
          :ok <- DynamicSupervisor.terminate_child(PatternSupervisor, pid)
       do
+        # kill any duplicates even though they should never exist.
+        Enum.each(results, fn {pid, _} -> DynamicSupervisor.terminate_child(PatternSupervisor, pid) end)
+        # Give the registry time to update
+        Process.sleep(10)
+
         {:ok, name}
       else
         _err -> {:error, :pattern_not_found}
@@ -86,6 +92,49 @@ defmodule Keywords do
   def pattern_exists?(name) do
     Registry.lookup(PatternRegistry, name) != []
   end
+
+  @doc """
+  Updates a keyword-pattern.
+
+  ## Examples
+      iex> Keywords.update_pattern(:stocks, ["TSLA", "XOM", "AMZN"])
+      {:ok, :stocks}
+      iex> Keywords.update_pattern(:stonks, ["TSLA", "XOM", "AMZN"])
+      {:error, :pattern_not_found}
+  """
+  def update_pattern(name, keyword_list)
+  def update_pattern(:all, _), do: {:error, :reserved_pattern_name}
+  def update_pattern(nil, _), do: {:error, :invalid_pattern_name}
+
+  def update_pattern(name, keyword_list) when is_list(keyword_list) do
+
+    case Registry.lookup(PatternRegistry, name) do
+      [{pid, _}] ->
+        %{options: opts} = Pattern.get(pid)
+
+        pattern =
+          keyword_list
+          |> add_case_variants(opts)
+          |> :binary.compile_pattern()
+
+        keywords_map = Enum.into(keyword_list, %{}, fn kw -> {String.downcase(kw), kw} end)
+
+        data = %{
+          pattern: pattern,
+          keywords_map: keywords_map,
+          options: opts
+        }
+
+        Pattern.update(pid, data)
+
+        {:ok, name}
+
+      [] ->
+        {:error, :pattern_not_found}
+    end
+  end
+
+  def update_pattern(_, _), do: {:error, :invalid_keywords}
 
   @doc """
   Parses tickers from string

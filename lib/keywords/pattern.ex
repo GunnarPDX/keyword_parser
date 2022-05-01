@@ -3,7 +3,8 @@ defmodule Keywords.Pattern do
 
   # data = %{
   #  pattern: pattern,
-  #  keyword_list: keyword_list,
+  #  keyword_list: keyword_list, ?????
+  #  keywords_map: keywords_map,
   #  options: opts
   #}
 
@@ -13,9 +14,7 @@ defmodule Keywords.Pattern do
   def get(pid),
       do: Agent.get(pid, fn data -> data end)
 
-  # def recompile_pattern(pid, keyword_list) do
-  #   pattern = compile_pattern(keyword_list)
-  #   Agent.update(pid, fn data -> %{new_pattern...} end)
-  # end
+  def update(pid, new_data),
+      do: Agent.update(pid, fn _data -> new_data end)
 
 end

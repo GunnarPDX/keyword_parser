@@ -120,3 +120,31 @@ Usage:
 iex> Keywords.kill_pattern("common_lyrics")
 {:ok, "common_lyrics"}
 ```
+
+## pattern_exists?
+#### Checks if a pattern exists
+```elixir
+pattern(name)
+```
+Usage:
+```elixir
+iex> Keywords.pattern_exists?(:stocks)
+true
+iex> Keywords.pattern_exists?(:stonks)
+false
+```
+
+## update_pattern
+#### Updates a preexisting pattern with new keywords using original opts settings.
+```elixir
+update_pattern(name)
+```
+Usage:
+```elixir
+iex> Keywords.update_pattern(:stocks, ["TSLA", "XOM", "AMZN"])
+{:ok, :stocks}
+iex> Keywords.update_pattern(:stonks, ["TSLA", "XOM", "AMZN"])
+{:error, :pattern_not_found}
+```
+
+
