@@ -29,7 +29,7 @@ defmodule Keywords.MixProject do
   defp deps do
     [
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
-      {:rustler, "~> 0.22.0"}
+      {:rustler, "~> 0.25.0"}
     ]
   end
 
@@ -53,5 +53,4 @@ defmodule Keywords.MixProject do
       keywords: [path: "native/parser", mode: if(Mix.env() == :prod, do: :release, else: :debug)]
     ]
   end
-
 end
