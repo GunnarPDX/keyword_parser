@@ -46,7 +46,7 @@ by adding `keywords` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:keywords, "~> 1.2.0"}
+    {:keywords, "~> 1.3.0"}
   ]
 end
 ```
