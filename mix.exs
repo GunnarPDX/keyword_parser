@@ -4,7 +4,7 @@ defmodule Keywords.MixProject do
   def project do
     [
       app: :keywords,
-      version: "1.4.2",
+      version: "1.4.3",
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -29,7 +29,7 @@ defmodule Keywords.MixProject do
   defp deps do
     [
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
-      {:rustler, "~> 0.29.0"}
+      {:rustler, "~> 0.36.1"}
     ]
   end
 

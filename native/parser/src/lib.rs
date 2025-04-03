@@ -84,4 +84,4 @@ fn get_match(start_pos: usize, end_pos: usize, text: &String) -> String {
   return res;
 }
 
-rustler::init!("Elixir.Parser", [find_matches]);
+rustler::init!("Elixir.Parser"); /* rustler::init!("Elixir.Parser", [find_matches]); */
