@@ -28,4 +28,4 @@ keyword_parser-*.tar
 .idea
 .idea/
 
-libparser.so
+priv/native/libparser.so
